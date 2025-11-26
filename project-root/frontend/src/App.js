@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Login from './Login';
-import Register from './Register';
-import DrawingCanvas from './DrawingCanvas';
-import RoomSelection from './RoomSelection';
+import Login from './components/Login';
+import Register from './components/Register'; // NEW modular path!
+import DrawingCanvas from './components/DrawingCanvas';
+import RoomSelection from './components/RoomSelection/RoomSelection';
+
 
 // Use environment variables for API URLs
 const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
@@ -12,14 +13,9 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('login');
-  const [registerData, setRegisterData] = useState({ email: '', password: '', fullName: '' });
-  const [loginData, setLoginData] = useState({ email: '', password: '', roomId: '' });
   const [token, setToken] = useState(null);
-
-  // Room selection state
   const [selectedRoom, setSelectedRoom] = useState(null);
 
-  // Only clear tokens on first mount
   useEffect(() => {
     localStorage.removeItem('token');
     setToken(null);
@@ -28,57 +24,29 @@ function App() {
     setSelectedRoom(null);
   }, []);
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registerData),
-      });
-      if (response.ok) {
-        alert('Registration successful! Please login.');
-        setActiveTab('login');
-      } else {
-        const error = await response.json();
-        alert(`Registration failed: ${error.detail}`);
-      }
-    } catch {
-      alert('Registration failed: Network error');
-    }
+  // NEW registration logic handled in hook, parent just needs callback
+  const handleRegisterSuccess = () => {
+    setActiveTab('login');
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  // Login success callback
+  const handleLoginSuccess = async (loginResult) => {
     try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginData.email, password: loginData.password }),
+      const meResponse = await fetch(`${API_URL}/me`, {
+        headers: { Authorization: `Bearer ${loginResult.access_token}` }
       });
-      if (response.ok) {
-        const result = await response.json();
-
-        // Validate and set user state
-        const meResponse = await fetch(`${API_URL}/me`, {
-          headers: { Authorization: `Bearer ${result.access_token}` }
-        });
-        if (meResponse.ok) {
-          const meData = await meResponse.json();
-          setCurrentUser(meData.user);
-          setToken(result.access_token);
-          setIsAuthenticated(true);
-        } else {
-          setCurrentUser(null);
-          setToken(null);
-          setIsAuthenticated(false);
-          alert('Login failed: Invalid credentials');
-        }
+      if (meResponse.ok) {
+        const meData = await meResponse.json();
+        setCurrentUser(meData.user);
+        setToken(loginResult.access_token);
+        setIsAuthenticated(true);
       } else {
-        const error = await response.json();
-        alert(`Login failed: ${error.detail}`);
+        setCurrentUser(null);
+        setToken(null);
+        setIsAuthenticated(false);
+        alert('Login failed: Invalid credentials');
       }
-    } catch (err) {
+    } catch {
       alert('Login failed: Network error');
     }
   };
@@ -92,7 +60,6 @@ function App() {
     localStorage.removeItem('token');
   };
 
-  // When user chooses a room from RoomSelection
   const handleRoomSelected = (roomId, roomName, role) => {
     setSelectedRoom({ id: roomId, name: roomName, role });
   };
@@ -111,18 +78,10 @@ function App() {
           </div>
           <div className="auth-forms">
             {activeTab === 'register' &&
-              <Register
-                registerData={registerData}
-                setRegisterData={setRegisterData}
-                handleRegister={handleRegister}
-              />
+              <Register onRegisterSuccess={handleRegisterSuccess} />
             }
             {activeTab === 'login' &&
-              <Login
-                loginData={loginData}
-                setLoginData={setLoginData}
-                handleLogin={handleLogin}
-              />
+              <Login onLoginSuccess={handleLoginSuccess} />
             }
           </div>
         </div>

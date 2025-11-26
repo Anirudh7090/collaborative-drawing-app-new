@@ -1,6 +1,12 @@
 import React from 'react';
+import './Register.css';
+import { useRegister } from './Register.hook.js';
 
-function Register({ registerData, setRegisterData, handleRegister }) {
+
+
+function Register({ onRegisterSuccess }) {
+  const { registerData, setRegisterData, handleRegister } = useRegister(onRegisterSuccess);
+
   return (
     <form onSubmit={handleRegister} className="auth-form">
       <h2>Create Account</h2>

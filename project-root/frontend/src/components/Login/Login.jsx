@@ -1,6 +1,10 @@
 import React from 'react';
+import './Login.css';
+import { useLogin } from './Login.hook';
 
-function Login({ loginData, setLoginData, handleLogin }) {
+function Login({ onLoginSuccess }) {
+  const { loginData, setLoginData, handleLogin } = useLogin(onLoginSuccess);
+
   return (
     <form onSubmit={handleLogin} className="auth-form">
       <h2>Welcome Back</h2>
@@ -22,7 +26,6 @@ function Login({ loginData, setLoginData, handleLogin }) {
           required
         />
       </div>
-      
       <button type="submit" className="submit-btn">Login</button>
     </form>
   );
